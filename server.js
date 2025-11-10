@@ -4,6 +4,7 @@ const cors = require('cors');
 const axios = require('axios');
 const path = require('path');
 const FormData = require('form-data');
+const { HttpProxyAgent } = require('http-proxy-agent');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const mime = require('mime-types');
 const https = require('https');
@@ -67,46 +68,48 @@ const httpsAgent = new https.Agent({
 async function identifyPlant(images) {
   const form = new FormData();
   try {
-   images.forEach((img, idx) => {
-  let ext = mime.extension(img.mimetype) || 'bin';
-  let normalizedExt = ext === 'jpg' ? 'jpeg' : ext;
-  let contentType = normalizedExt === 'jpeg' ? 'image/jpeg' : img.mimetype;
+    images.forEach((img, idx) => {
+      let ext = mime.extension(img.mimetype) || 'jpg';
+      let normalizedExt = ext === 'jpeg' ? 'jpg' : ext;
 
-  form.append('images', img.buffer, {
-    filename: `image${idx}.${normalizedExt}`,
-    contentType: contentType
-  });
-});
+      form.append('images', img.buffer, {
+        filename: `plant${idx}.${normalizedExt}`,
+        contentType: img.mimetype
+      });
 
-// Добавить все органы одним вызовом append с массивом строк:
-images.forEach(img => form.append('organs', img.organ));
+      form.append('organs', img.organ);
+    });
 
+    console.log('🚀 Отправляем запрос к PlantNet API...');
 
-    const agent = PROXY_SERVER ? new HttpsProxyAgent(PROXY_SERVER) : undefined;
+    const axiosConfig = {
+      headers: form.getHeaders(),
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
+      timeout: 60000
+    };
 
-    const response = await fetch(
-      `https://my-api.plantnet.org/v2/identify/all?api-key=${API_KEY}`,
-      {
-        method: 'POST',
-        body: form,
-        agent,
-        headers: form.getHeaders(),
-      }
-    );
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error('❌ PlantNet response error:', response.status, text);
-      throw new Error(`HTTP ${response.status}: ${text}`);
+    // ✅ С ПРОКСИ для PlantNet
+    if (PROXY_SERVER) {
+      axiosConfig.httpAgent = new HttpProxyAgent(PROXY_SERVER);
+      axiosConfig.httpsAgent = new HttpsProxyAgent(PROXY_SERVER);
+      console.log('🔌 Используем прокси для PlantNet');
     }
 
-    return await response.json();
+    const response = await axios.post(
+      `https://my-api.plantnet.org/v2/identify/all?api-key=${API_KEY}`,
+      form,
+      axiosConfig
+    );
+
+    console.log('✅ Результат получен:', response.data.results?.length || 0, 'совпадений');
+    return response.data;
+    
   } catch (error) {
-    console.error('❌ Ошибка PlantNet:', error);
-    throw error;
+    console.error('❌ Ошибка PlantNet:', error.response?.status, error.message);
+    throw new Error(`PlantNet ошибка: ${error.message}`);
   }
 }
-
 
 app.post('/api/identify', upload.fields([
   { name: 'flower', maxCount: 1 },
