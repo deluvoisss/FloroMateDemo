@@ -229,13 +229,9 @@
   object-fit: cover;
 }
 
-/* Анимация вращения монеты */
 @keyframes spinCoin {
   0% {
     transform: rotateY(0deg);
-  }
-  50% {
-    transform: rotateY(180deg);
   }
   100% {
     transform: rotateY(360deg);
@@ -243,8 +239,9 @@
 }
 
 .coin.spinning {
-  animation: spinCoin 0.8s ease-in-out forwards;
+  animation: spinCoin 3s ease-in-out forwards;
 }
+
 
 /* Адаптивность */
 @media (max-width: 1024px) {

@@ -42,12 +42,18 @@ if (PROXY_SERVER) {
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:8099', // Ваш Bro.js порт
-  methods: ['GET', 'POST', 'OPTIONS'],
-  credentials: true
+  origin: [
+    'http://localhost:8099',           // локальная разработка
+    'https://ift-1.brojs.ru',          // ваш dev стенд
+    'https://static.brojs.ru'          // если нужен доступ с этого домена
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
+
 
 // Multer конфигурация для растений
 const storage = multer.memoryStorage();

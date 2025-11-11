@@ -22,7 +22,7 @@ const Header: React.FC = () => {
     const triggerSpin = () => {
       if (coinRef.current) {
         coinRef.current.classList.remove('spinning');
-        void coinRef.current.offsetWidth;
+        void coinRef.current.offsetWidth; // триггер перерисовки
         coinRef.current.classList.add('spinning');
         setCurrentFlowerIndex((prev) => (prev + 1) % flowers.length);
       }
